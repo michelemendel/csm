@@ -1,0 +1,22 @@
+{
+  "name": "csm_",
+  "version": "0.1.0",
+  "scripts": {
+    "build": "bsb -make-world",
+    "start": "bsb -make-world -w",
+    "clean": "bsb -clean-world",
+    "app": "nodemon lib/js/src/App.js"
+  },
+  "keywords": [
+    "BuckleScript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "bs-platform": "^5.0.6",
+    "nodemon": "^1.19.2"
+  },
+  "dependencies": {
+    "tablecloth-bucklescript": "0.0.6"
+  }
+}
