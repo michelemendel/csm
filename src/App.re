@@ -1,9 +1,7 @@
 open Tree;
+open LinkedList;
 
-Js.log("----------------------------------------");
+Js.log("1----------------------------------------");
 
-let t2 = Tree("a", [Tree("b", [Leaf("c"), Leaf("d")]), Tree("e", [Leaf("f"), Leaf("g")])]);
-
-Js.log(t2);
-
-/* walk(t2); */
+TryTree.runT1();
+/* TryLinkedList.runLL2(); */
