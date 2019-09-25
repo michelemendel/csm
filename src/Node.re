@@ -3,20 +3,21 @@ type nodeType =
   | Collection
   | Property;
 
-/* module type Node = {
-     type t;
-     type nodeKV = {uuid: string};
-     type node('t) =
-       | Node('t);
-     let make: nodeKV => node(nodeKV);
-   };
-    */
+type nodeKV = {
+  ntype: string,
+  label: string,
+};
 
-type t = {ntype: string};
+module type Node = {
+  type t;
+  type node('t) =
+    | Node('t);
+  let make: nodeKV => node(nodeKV);
+};
 
-type node('a) =
-  | Node('a);
+type t =
+  | Node(nodeKV);
 
-let empty = () => {ntype: "-"};
+let empty = Node({ntype: "", label: ""});
 
-/* let make = nodeKV => Node(nodeKV); */
+let make = nodeKV => Node(nodeKV);
