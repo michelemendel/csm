@@ -38,7 +38,7 @@ let getPUuid =
 
 let byUuid = (u, tree) => getUuid(tree) == u;
 
-let add = (source, target) => {
+let add = (source, target) =>
   switch (target) {
   | Empty => Empty
   | Tree(targetU, p, c, l) =>
@@ -51,25 +51,33 @@ let add = (source, target) => {
     let l = insert(source, l);
     Tree(targetU, p, c, l);
   };
-};
 
-let delete = (source, target) => {
+let delete = (source, target) =>
   switch (target) {
   | Empty => Empty
   | Tree(u, p, c, l) =>
     let l = removeBy(byUuid(getUuid(source)), l);
     Tree(u, p, c, l);
   };
-};
 
-let update = (source, target) => {
-  add(source, delete(source, target));
-};
+let update = (source, target) => add(source, delete(source, target));
 
 let tatwO = (source, target) => {
   let target = update(source, target);
   target;
 };
+
+let rec findRec = (uuid, node) =>
+  switch (node) {
+  | Empty => Empty
+  | Tree(_, _, _, _) => Empty
+  | Tree(u, _, _, _) when uuid == u => node
+  /* LinkedList.iter(findRec(uuid), l); */
+  /* | Tree(_, _, _, l) =>  */
+  /* Empty */
+  };
+
+let find = (node, tree) => findRec(getUuid(node), tree);
 
 let tatw = (source, target) => {
   let newSource = update(source, target);
@@ -80,7 +88,14 @@ let tatw = (source, target) => {
   | Empty => Js.log("---EMPTY")
   /* target */
   | Tree(u, newTarget, _, l) =>
-    Js.log("---u,nS,nT " ++ u ++ "," ++ getUuid(newSource) ++ "," ++ getUuid(newTarget))
+    Js.log(
+      "---u,nS,nT "
+      ++ u
+      ++ ","
+      ++ getUuid(newSource)
+      ++ ","
+      ++ getUuid(newTarget),
+    )
   /* tatw(newSource, newTarget); */
   };
 
@@ -119,9 +134,18 @@ let printFn = (level, u, p, l) => {
   let rootsString =
     switch (len) {
     | 0 => "_"
-    | _ => "[" ++ string_of_array(",", Array.map(a => getUuid(a), toArray(l))) ++ "]"
+    | _ =>
+      "["
+      ++ string_of_array(",", Array.map(a => getUuid(a), toArray(l)))
+      ++ "]"
     };
-  Js.log(fmtLevel(level, d, "(" ++ u ++ "," ++ getUuid(p) ++ "," ++ rootsString ++ ")"));
+  Js.log(
+    fmtLevel(
+      level,
+      d,
+      "(" ++ u ++ "," ++ getUuid(p) ++ "," ++ rootsString ++ ")",
+    ),
+  );
 };
 
 let printTree = tree => traverse(printFn, 0, tree);

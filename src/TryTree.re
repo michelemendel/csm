@@ -12,7 +12,13 @@ let runPart1 = () => {
   /* let byUuid = (uuid, tree) => getUuid(tree) == uuid; */
 
   let root = treeEmpty("00");
-  let tree01 = tree("01", Empty, Content({ntype: "ent", label: "content"}), LinkedList.empty);
+  let tree01 =
+    tree(
+      "01",
+      Empty,
+      Content({ntype: "ent", label: "content"}),
+      LinkedList.empty,
+    );
   let tree02 = tree("02", Empty, Content.empty, LinkedList.empty);
   let tree03 = treeEmpty("03");
   let tree04 = treeEmpty("04");
@@ -97,6 +103,10 @@ let runPart5 = () => {
   /*   let tree05 = tree("05", Empty, Content.empty, LinkedList.empty);
        let tree06 = tree("06", Empty, Content.empty, LinkedList.empty);
        */
+
+  let t = find(tree01, root);
+  printTree(tree01);
+  printTree(t);
 
   let root2a = tatw(tree03, tree01);
   log(getUuid(tree01) ++ "::" ++ getPUuid(tree01));
