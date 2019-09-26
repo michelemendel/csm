@@ -4,72 +4,124 @@ open LinkedList;
 open Utils;
 
 type uuid = string;
-type puuid = string;
 
 module type Tree = {
   type t =
-    | Tree(uuid, puuid, Content.t, linkedList(t));
+    | Tree(uuid, t, Content.t, linkedList(t));
 };
 
 type t =
-  | Tree(uuid, puuid, Content.t, linkedList(t));
+  | Empty
+  | Tree(uuid, t, Content.t, linkedList(t));
 
-let treeEmpty = uuid => Tree(uuid, "_", Content.empty, LinkedList.empty);
+let treeEmpty = uuid => Tree(uuid, Empty, Content.empty, LinkedList.empty);
 
-let tree = (uuid, puuid, content, linkedList) => Tree(uuid, puuid, content, linkedList);
+/*
+ Legend
+ u, uuid - universally unique identifier
+ p - parent
+ c, content - Here will be stuff
+ l, linkedList - The children of a node in the tree
+ */
+
+let tree = (u, p, c, l) => Tree(u, p, c, l);
 
 let getUuid =
   fun
-  | Tree(uuid, _, _, _) => uuid;
+  | Empty => ""
+  | Tree(u, _, _, _) => u;
 
-let byUuid = (uuid, tree) => getUuid(tree) == uuid;
+let getPUuid =
+  fun
+  | Empty => ""
+  | Tree(_, p, _, _) => getUuid(p);
 
-/* let add = (source, target) => {
-     switch (target) {
-     | Tree(uuid, puuid, content, linkedList) => Tree(uuid, puuid, content, insert(source, linkedList))
-     };
-   }; */
+let byUuid = (u, tree) => getUuid(tree) == u;
 
-let update = (source, target) => {
+let add = (source, target) => {
   switch (target) {
-  | Tree(targetUuid, puuid, content, linkedList) =>
-    /* Add parents uuid (puuid) to child */
+  | Empty => Empty
+  | Tree(targetU, p, c, l) =>
+    /* Add parent to child */
     let source =
       switch (source) {
-      | Tree(uuid, _, content, linkedList) => tree(uuid, targetUuid, content, linkedList)
+      | Empty => Empty
+      | Tree(u, _, c, l) => tree(u, target, c, l)
       };
-
-    let linkedList = removeBy(byUuid(getUuid(source)), linkedList);
-    let linkedList = insert(source, linkedList);
-    Tree(targetUuid, puuid, content, linkedList);
+    let l = insert(source, l);
+    Tree(targetU, p, c, l);
   };
 };
 
 let delete = (source, target) => {
   switch (target) {
-  | Tree(uuid, puuid, content, linkedList) =>
-    let linkedList = removeBy(byUuid(getUuid(source)), linkedList);
-    Tree(uuid, puuid, content, linkedList);
+  | Empty => Empty
+  | Tree(u, p, c, l) =>
+    let l = removeBy(byUuid(getUuid(source)), l);
+    Tree(u, p, c, l);
   };
 };
 
-let rec traverse = (fn, level, tree) =>
-  switch (tree) {
-  | Tree(uuid, puuid, _, roots) when LinkedList.isEmpty(roots) => fn(level, uuid, puuid, roots)
-  | Tree(uuid, puuid, _, roots) =>
-    fn(level, uuid, puuid, roots);
-    LinkedList.iter(traverse(fn, level + 1), roots);
+let update = (source, target) => {
+  add(source, delete(source, target));
+};
+
+let tatwO = (source, target) => {
+  let target = update(source, target);
+  target;
+};
+
+let tatw = (source, target) => {
+  let newSource = update(source, target);
+  Js.log("---s,t " ++ getUuid(source) ++ "," ++ getUuid(target));
+  Js.log("---sP,tP " ++ getPUuid(source) ++ "," ++ getPUuid(target));
+
+  switch (target) {
+  | Empty => Js.log("---EMPTY")
+  /* target */
+  | Tree(u, newTarget, _, l) =>
+    Js.log("---u,nS,nT " ++ u ++ "," ++ getUuid(newSource) ++ "," ++ getUuid(newTarget))
+  /* tatw(newSource, newTarget); */
   };
 
-let printFn = (level, uuid, puuid, branches) => {
+  Empty;
+};
+
+/* let updateX = (source, target) => {
+     switch (target) {
+     | Empty => Empty
+     | Tree(targetU, p, c, l) =>
+       /* Add parent to child */
+       let source =
+         switch (source) {
+         | Empty => Empty
+         | Tree(u, _, c, l) => tree(u, target, c, l)
+         };
+
+       let l = removeBy(byUuid(getUuid(source)), l);
+       let l = insert(source, l);
+       Tree(targetU, p, c, l);
+     };
+   }; */
+
+let rec traverse = (fn, level, tree) =>
+  switch (tree) {
+  | Empty => fn(level, "-", Empty, LinkedList.Empty)
+  | Tree(u, p, _, l) when LinkedList.isEmpty(l) => fn(level, u, p, l)
+  | Tree(u, p, _, l) =>
+    fn(level, u, p, l);
+    LinkedList.iter(traverse(fn, level + 1), l);
+  };
+
+let printFn = (level, u, p, l) => {
   let d = 4; /* nof spaces */
-  let len = Array.length(toArray(branches));
+  let len = Array.length(toArray(l));
   let rootsString =
     switch (len) {
     | 0 => "_"
-    | _ => "[" ++ string_of_array(",", Array.map(a => getUuid(a), toArray(branches))) ++ "]"
+    | _ => "[" ++ string_of_array(",", Array.map(a => getUuid(a), toArray(l))) ++ "]"
     };
-  Js.log(fmtLevel(level, d, "(" ++ uuid ++ "," ++ puuid ++ "," ++ rootsString ++ ")"));
+  Js.log(fmtLevel(level, d, "(" ++ u ++ "," ++ getUuid(p) ++ "," ++ rootsString ++ ")"));
 };
 
 let printTree = tree => traverse(printFn, 0, tree);
