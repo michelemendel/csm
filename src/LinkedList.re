@@ -44,7 +44,10 @@ let tail = list =>
   | LL(_head, tail) => tail
   };
 
-/* Insert value at end of list */
+/*
+ Insert value at end of list
+ and returns a new one.
+ */
 let rec insert = (value, list) =>
   switch (list) {
   | Empty => LL(value, Empty)
@@ -63,15 +66,16 @@ let rec remove = (value, list) =>
     }
   };
 
-let rec removeBy = (pfn: 't => bool, list) =>
+let rec removeBy = (pred: 't => bool, list) =>
   switch (list) {
   | Empty => Empty
-  | LL(_head, Empty) => Empty
+  | LL(head, Empty) when pred(head) => Empty
+  | LL(head, Empty) => LL(head, Empty)
   | LL(head, LL(nextHead, nextTail) as tail) =>
-    if (pfn(head)) {
+    if (pred(head)) {
       LL(nextHead, nextTail);
     } else {
-      LL(head, removeBy(pfn, tail));
+      LL(head, removeBy(pred, tail));
     }
   };
 

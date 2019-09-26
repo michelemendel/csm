@@ -1,2 +1,2 @@
-let addNode = (tree: Tree.t, node: Node.t) => ();
-let getNodes = (tree: Tree.t) => ();
+let addContent = (tree: Tree.t, content: Content.t) => ();
+let getContents = (tree: Tree.t) => ();
