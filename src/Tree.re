@@ -21,10 +21,10 @@ let treeEmpty = uuid => Tree(uuid, Empty, Content.empty, LinkedList.empty);
  u, uuid - universally unique identifier
  p - parent
  c, content - Here will be stuff
- l, linkedList - The children of a node in the tree
+ ls, linkedList - The children of a node in the tree
  */
 
-let tree = (u, p, c, l) => Tree(u, p, c, l);
+let tree = (u, p, c, ls) => Tree(u, p, c, ls);
 
 let getUuid =
   fun
@@ -38,26 +38,29 @@ let getPUuid =
 
 let byUuid = (u, tree) => getUuid(tree) == u;
 
+let string_of_children = ls => string_of_array(",", Array.map(a => getUuid(a), toArray(ls)));
+let log = s => Js.log("\n---" ++ s);
+
 let add = (source, target) =>
   switch (target) {
   | Empty => Empty
-  | Tree(targetU, p, c, l) =>
+  | Tree(targetU, p, c, ls) =>
     /* Add parent to child */
     let source =
       switch (source) {
       | Empty => Empty
-      | Tree(u, _, c, l) => tree(u, target, c, l)
+      | Tree(u, _, c, ls) => tree(u, target, c, ls)
       };
-    let l = insert(source, l);
-    Tree(targetU, p, c, l);
+    let ls = insert(source, ls);
+    Tree(targetU, p, c, ls);
   };
 
 let delete = (source, target) =>
   switch (target) {
   | Empty => Empty
-  | Tree(u, p, c, l) =>
-    let l = removeBy(byUuid(getUuid(source)), l);
-    Tree(u, p, c, l);
+  | Tree(u, p, c, ls) =>
+    let ls = removeBy(byUuid(getUuid(source)), ls);
+    Tree(u, p, c, ls);
   };
 
 let update = (source, target) => add(source, delete(source, target));
@@ -67,19 +70,6 @@ let tatwO = (source, target) => {
   target;
 };
 
-let rec findRec = (uuid, node) =>
-  switch (node) {
-  | Empty => Empty
-  | Tree(u, _, _, l) =>
-    if (uuid == u) {
-      node;
-    } else {
-      LinkedList.fold(findRec(uuid), Empty, l);
-    }
-  };
-
-let find = (node, tree) => findRec(getUuid(node), tree);
-
 let tatw = (source, target) => {
   let newSource = update(source, target);
   Js.log("---s,t " ++ getUuid(source) ++ "," ++ getUuid(target));
@@ -88,15 +78,8 @@ let tatw = (source, target) => {
   switch (target) {
   | Empty => Js.log("---EMPTY")
   /* target */
-  | Tree(u, newTarget, _, l) =>
-    Js.log(
-      "---u,nS,nT "
-      ++ u
-      ++ ","
-      ++ getUuid(newSource)
-      ++ ","
-      ++ getUuid(newTarget),
-    )
+  | Tree(u, newTarget, _, ls) =>
+    Js.log("---u,nS,nT " ++ u ++ "," ++ getUuid(newSource) ++ "," ++ getUuid(newTarget))
   /* tatw(newSource, newTarget); */
   };
 
@@ -106,47 +89,85 @@ let tatw = (source, target) => {
 /* let updateX = (source, target) => {
      switch (target) {
      | Empty => Empty
-     | Tree(targetU, p, c, l) =>
+     | Tree(targetU, p, c, ls) =>
        /* Add parent to child */
        let source =
          switch (source) {
          | Empty => Empty
-         | Tree(u, _, c, l) => tree(u, target, c, l)
+         | Tree(u, _, c, ls) => tree(u, target, c, ls)
          };
 
-       let l = removeBy(byUuid(getUuid(source)), l);
-       let l = insert(source, l);
-       Tree(targetU, p, c, l);
+       let ls = removeBy(byUuid(getUuid(source)), ls);
+       let ls = insert(source, ls);
+       Tree(targetU, p, c, ls);
      };
    }; */
 
 let rec traverse = (fn, level, tree) =>
   switch (tree) {
   | Empty => fn(level, "-", Empty, LinkedList.Empty)
-  | Tree(u, p, _, l) when LinkedList.isEmpty(l) => fn(level, u, p, l)
-  | Tree(u, p, _, l) =>
-    fn(level, u, p, l);
-    LinkedList.iter(traverse(fn, level + 1), l);
+  | Tree(u, p, _, ls) when LinkedList.isEmpty(ls) => fn(level, u, p, ls)
+  | Tree(u, p, _, ls) =>
+    fn(level, u, p, ls);
+    LinkedList.iter(traverse(fn, level + 1), ls);
   };
 
-let printFn = (level, u, p, l) => {
+let printFn = (level, u, p, ls) => {
   let d = 4; /* nof spaces */
-  let len = Array.length(toArray(l));
+  let len = Array.length(toArray(ls));
   let rootsString =
     switch (len) {
     | 0 => "_"
-    | _ =>
-      "["
-      ++ string_of_array(",", Array.map(a => getUuid(a), toArray(l)))
-      ++ "]"
+    | _ => "[" ++ string_of_children(ls) ++ "]"
     };
-  Js.log(
-    fmtLevel(
-      level,
-      d,
-      "(" ++ u ++ "," ++ getUuid(p) ++ "," ++ rootsString ++ ")",
-    ),
-  );
+  Js.log(fmtLevel(level, d, "(" ++ u ++ "," ++ getUuid(p) ++ "," ++ rootsString ++ ")"));
 };
 
 let printTree = tree => traverse(printFn, 0, tree);
+
+let rec findRec = (uuid: string, tree: t): t => {
+  switch (tree) {
+  | Empty =>
+    log("Empty");
+    Empty;
+  | Tree(u, p, _, ls) =>
+    log("Not empty: " ++ u ++ "=" ++ uuid ++ "->" ++ string_of_bool(u == uuid));
+    log("tail: " ++ string_of_children(ls));
+    LinkedList.fold(
+      (_acc, head) => {
+        let _ = findRec(uuid, head);
+        head;
+      },
+      Empty,
+      ls,
+    );
+  };
+};
+
+let rec findRecX = (uuid, ls: linkedList(t)): t => {
+  /* Js.log("linkedlist: " ++ string_of_array(":", toArray(ls))); */
+  switch (ls) {
+  | Empty =>
+    Js.log("--empty");
+    Empty;
+  | LL(h, t) =>
+    printTree(h);
+    Js.log2("h:uuid (" ++ getUuid(h) ++ ") == uuid(" ++ uuid ++ "): ", getUuid(h) == uuid);
+    if (getUuid(h) == uuid) {
+      Js.log("found it");
+      h;
+    } else {
+      /*         switch(t){
+                       | Empty => Empty
+                       | Tree(u, p, c, ls) =>
+                 Js.log("tail: " ++ string_of_array(",", toArray(ls))); */
+      findRecX(
+        uuid,
+        Empty,
+      );
+    };
+  };
+};
+
+let find = (node, root) => findRec(getUuid(node), root);
+let findX = (node, root) => findRecX(getUuid(node), insert(root, LinkedList.Empty));
