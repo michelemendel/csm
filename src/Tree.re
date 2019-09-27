@@ -70,11 +70,12 @@ let tatwO = (source, target) => {
 let rec findRec = (uuid, node) =>
   switch (node) {
   | Empty => Empty
-  | Tree(_, _, _, _) => Empty
-  | Tree(u, _, _, _) when uuid == u => node
-  /* LinkedList.iter(findRec(uuid), l); */
-  /* | Tree(_, _, _, l) =>  */
-  /* Empty */
+  | Tree(u, _, _, l) =>
+    if (uuid == u) {
+      node;
+    } else {
+      LinkedList.fold(findRec(uuid), Empty, l);
+    }
   };
 
 let find = (node, tree) => findRec(getUuid(node), tree);
