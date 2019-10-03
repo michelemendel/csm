@@ -30,22 +30,14 @@ type uuid = string;
  lt, lookupTable
  */
 
-type t =
+type node =
   | Empty
-  | Node(uuid, t, Content.t, linkedList(t));
+  | Node(uuid, node, Content.t, linkedList(node));
 
-let makeTree = () => (
-  Node("0", Empty, Content.empty, LinkedList.empty),
-  LT.empty,
-);
-
-let treeEmpty = uuid => (
-  Node(uuid, Empty, Content.empty, LinkedList.empty),
-  LT.empty,
-);
-
-let node = (u, p, c, ls) => Node(u, p, c, ls);
-let tree = (u, p, c, ls) => (Node(u, p, c, ls), LT.empty);
+let makeRoot = () => (Node("0", Empty, Content.empty, LinkedList.empty), LT.empty);
+let nodeLocal = (u, p, c, ls) => Node(u, p, c, ls);
+let nodeEmpty = uuid => (Node(uuid, Empty, Content.empty, LinkedList.empty), LT.empty);
+let node = (u, p, c, ls) => (Node(u, p, c, ls), LT.empty);
 
 let getUuid =
   fun
@@ -59,44 +51,43 @@ let getPUuid =
 
 let byUuid = (u, node) => getUuid(node) == u;
 
-let string_of_children = ls =>
-  string_of_array(",", Array.map(a => getUuid(a), toArray(ls)));
+let string_of_children = ls => string_of_array(",", Array.map(a => getUuid(a), toArray(ls)));
 let log = s => Js.log("\n---" ++ s);
 
 let attachLocal = (source, target) =>
-  switch (target) {
-  | Empty => Empty
+  switch (fst(target)) {
+  | Empty => (source, Empty)
   | Node(targetU, p, c, ls) =>
     /* Add parent to child */
     let source =
       switch (source) {
       | Empty => Empty
-      | Node(u, _, c, ls) => node(u, target, c, ls)
+      | Node(u, _, c, ls) => nodeLocal(u, fst(target), c, ls)
       };
-    let ls = insert(source, ls);
-    Node(targetU, p, c, ls);
+    /* Add child to parent */
+    let target = Node(targetU, p, c, insert(source, ls));
+    /* Return the updated source and target */
+    (source, target);
   };
 
 let removeLocal = (source, target) =>
-  switch (target) {
-  | Empty => Empty
+  switch (fst(target)) {
+  | Empty => (Empty, Empty)
   | Node(u, p, c, ls) =>
     let ls = removeBy(byUuid(getUuid(source)), ls);
-    Node(u, p, c, ls);
+    (Empty, Node(u, p, c, ls));
   };
 
-let updateLocal = (source, target) =>
-  attachLocal(source, removeLocal(source, target));
+let updateLocal = (source, target) => attachLocal(source, removeLocal(source, target));
 
-let attach = (source, target) => (
-  attachLocal(fst(source), fst(target)),
-  LT.empty,
-);
+let attach = (source, target) => {
+  let (_, lt) = target;
+  let (s, t) = attachLocal(source, target);
 
-let remove = (source, target) => (
-  removeLocal(fst(source), fst(target)),
-  LT.empty,
-);
+  (snd(attachLocal(source, target)), LT.empty);
+};
+
+let remove = (source, target) => (removeLocal(fst(source), fst(target)), LT.empty);
 
 /* Probably to update content */
 let update = (source, target) => updateLocal(source, target);
@@ -105,33 +96,26 @@ let update = (source, target) => updateLocal(source, target);
  Attach, remove, update requires changes to propagate up to root,
  and the root will be a new object.
  */
-let tatwO = (source, target) => {
-  let target = update(source, target);
-  target;
-};
+/* let tatwO = (source, target) => {
+     let target = update(source, target);
+     target;
+   };
+   let tatw = (source, target) => {
+     let newSource = update(source, target);
+     Js.log("---s,t " ++ getUuid(source) ++ "," ++ getUuid(target));
+     Js.log("---sP,tP " ++ getPUuid(source) ++ "," ++ getPUuid(target));
 
-let tatw = (source, target) => {
-  let newSource = update(source, target);
-  Js.log("---s,t " ++ getUuid(source) ++ "," ++ getUuid(target));
-  Js.log("---sP,tP " ++ getPUuid(source) ++ "," ++ getPUuid(target));
+     switch (target) {
+     | Empty => Js.log("---EMPTY")
+     /* target */
+     | Node(u, newTarget, _, ls) =>
+       Js.log("---u,nS,nT " ++ u ++ "," ++ getUuid(newSource) ++ "," ++ getUuid(newTarget))
+     /* tatw(newSource, newTarget); */
+     };
 
-  switch (target) {
-  | Empty => Js.log("---EMPTY")
-  /* target */
-  | Node(u, newTarget, _, ls) =>
-    Js.log(
-      "---u,nS,nT "
-      ++ u
-      ++ ","
-      ++ getUuid(newSource)
-      ++ ","
-      ++ getUuid(newTarget),
-    )
-  /* tatw(newSource, newTarget); */
-  };
-
-  Empty;
-};
+     Empty;
+   };
+    */
 
 let rec printTreeRec = (fn, level, node) =>
   switch (node) {
@@ -150,19 +134,13 @@ let printFn = (level, u, p, ls) => {
     | 0 => "_"
     | _ => "[" ++ string_of_children(ls) ++ "]"
     };
-  Js.log(
-    fmtLevel(
-      level,
-      d,
-      "(" ++ u ++ "," ++ getUuid(p) ++ "," ++ rootsString ++ ")",
-    ),
-  );
+  Js.log(fmtLevel(level, d, "(" ++ u ++ "," ++ getUuid(p) ++ "," ++ rootsString ++ ")"));
 };
 
 let printTree = tree => printTreeRec(printFn, 0, fst(tree));
 
-let rec findRec = (uuid: string, tree: t): t =>
-  switch (tree) {
+let rec findRec = (uuid: string, node): node =>
+  switch (node) {
   | Empty =>
     log("Empty");
     Empty;
@@ -181,7 +159,7 @@ let rec findRec = (uuid: string, tree: t): t =>
     );
 
     if (thisIsTheNode) {
-      tree;
+      node;
     } else {
       LinkedList.fold(
         (_acc, head) => {

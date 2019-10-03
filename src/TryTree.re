@@ -2,7 +2,7 @@
  Trying out trees
  */
 
-open Content;
+/* open Content; */
 open Tree;
 open LookupTable;
 open Printf;
@@ -10,54 +10,50 @@ open Printf;
 let log = s => Js.log("\n---" ++ s);
 
 let runPart1 = () => {
-  /* Predicate by tree UUID */
-  /* let byUuid = (uuid, tree) => getUuid(tree) == uuid; */
+  let root = makeRoot();
+  let node01 = nodeEmpty("01");
+  let node02 = nodeEmpty("02");
+  let node03 = nodeEmpty("03");
+  let node04 = nodeEmpty("04");
 
-  let root = makeTree();
-
-  let tree01 = treeEmpty("01");
-  let tree02 = treeEmpty("02");
-  let tree03 = treeEmpty("03");
-  let tree04 = treeEmpty("04");
-
-  (root, tree01, tree02, tree03, tree04);
+  (root, node01, node02, node03, node04);
 };
 
 let runPart3 = () => {
   log("Part3");
-  let (root, tree01, tree02, tree03, tree04) = runPart1();
+  let (root, node01, node02, node03, node04) = runPart1();
 
-  let root = root |> attach(tree01) |> attach(tree02);
-  let tree01 = tree01 |> attach(tree03) |> attach(tree04);
-  let root = attach(tree01, root);
+  let root = root |> attach(node01) |> attach(node02);
+  let node01 = node01 |> attach(node03) |> attach(node04);
+  let root = attach(node01, root);
 
   printTree(root);
 };
 
 let runPart4 = () => {
   log("Part4");
-  let (root, tree01, tree02, tree03, tree04) = runPart1();
+  let (root, node01, node02, node03, node04) = runPart1();
 
-  let root = root |> attach(tree01) |> attach(tree02);
+  let root = root |> attach(node01) |> attach(node02);
   log("root");
   printTree(root);
 
   log("Update 01, 02 and 04, then update up to root -> root2");
-  let tree01 = tree01 |> attach(tree03) |> attach(tree04);
-  let tree05 = tree("05", Empty, Content.empty, LinkedList.empty);
-  let tree02 = tree02 |> attach(tree05);
-  let tree06 = tree("06", Empty, Content.empty, LinkedList.empty);
-  let tree04 = tree04 |> attach(tree06);
-  let tree01 = tree01 |> attach(tree04);
-  let root2 = root |> attach(tree01) |> attach(tree02);
+  let node01 = node01 |> attach(node03) |> attach(node04);
+  let node05 = node("05", Empty, Content.empty, LinkedList.empty);
+  let node02 = node02 |> attach(node05);
+  let node06 = node("06", Empty, Content.empty, LinkedList.empty);
+  let node04 = node04 |> attach(node06);
+  let node01 = node01 |> attach(node04);
+  let root2 = root |> attach(node01) |> attach(node02);
   printTree(root2);
 
   log("Move 04 from 01 to 05, then update up to root -> root3");
-  let tree01 = tree01 |> remove(tree04);
-  let root3 = root2 |> attach(tree01);
-  let tree05 = tree05 |> attach(tree04);
-  let tree02 = tree02 |> attach(tree05);
-  let root3 = root3 |> attach(tree02);
+  let node01 = node01 |> remove(node04);
+  let root3 = root2 |> attach(node01);
+  let node05 = node05 |> attach(node04);
+  let node02 = node02 |> attach(node05);
+  let root3 = root3 |> attach(node02);
   printTree(root3);
 
   log("Looking again at root to see that it hasn't changed");
@@ -71,18 +67,14 @@ let logOp = (uuid, lt) =>
   };
 
 let print = lt =>
-  LT.iter(
-    (uuid, node) =>
-      print_endline(sprintf("%s %s", uuid, getUuid(fst(node)))),
-    lt,
-  );
+  LT.iter((uuid, node) => print_endline(sprintf("%s %s", uuid, getUuid(fst(node)))), lt);
 
 let runPart5 = () => {
   let lt = makeLT();
-  let tree03 = treeEmpty("03");
-  let tree04 = treeEmpty("04");
-  let lt = addLT("03", tree03, lt);
-  let lt = addLT("04", tree04, lt);
+  let node03 = nodeEmpty("03");
+  let node04 = nodeEmpty("04");
+  let lt = addLT("03", node03, lt);
+  let lt = addLT("04", node04, lt);
 
   print(lt);
 
