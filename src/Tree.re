@@ -34,9 +34,16 @@ type node =
   | Empty
   | Node(uuid, node, Content.t, linkedList(node));
 
-let makeRoot = () => (Node("0", Empty, Content.empty, LinkedList.empty), LT.empty);
-let nodeLocal = (u, p, c, ls) => Node(u, p, c, ls);
-let nodeEmpty = uuid => (Node(uuid, Empty, Content.empty, LinkedList.empty), LT.empty);
+let makeTree = () => (
+  Node("0", Empty, Content.empty, LinkedList.empty),
+  LT.empty,
+);
+
+/* let nodeLocal = (u, p, c, ls) => Node(u, p, c, ls); */
+let nodeEmpty = uuid => (
+  Node(uuid, Empty, Content.empty, LinkedList.empty),
+  LT.empty,
+);
 let node = (u, p, c, ls) => (Node(u, p, c, ls), LT.empty);
 
 let getUuid =
@@ -51,18 +58,19 @@ let getPUuid =
 
 let byUuid = (u, node) => getUuid(node) == u;
 
-let string_of_children = ls => string_of_array(",", Array.map(a => getUuid(a), toArray(ls)));
+let string_of_children = ls =>
+  string_of_array(",", Array.map(a => getUuid(a), toArray(ls)));
 let log = s => Js.log("\n---" ++ s);
 
-let attachLocal = (source, target) =>
+let attachLocal = (source: (node, 'a), target: (node, 'b)): (node, node) =>
   switch (fst(target)) {
-  | Empty => (source, Empty)
+  | Empty => (fst(source), Empty)
   | Node(targetU, p, c, ls) =>
     /* Add parent to child */
     let source =
-      switch (source) {
+      switch (fst(source)) {
       | Empty => Empty
-      | Node(u, _, c, ls) => nodeLocal(u, fst(target), c, ls)
+      | Node(u, _, c, ls) => Node(u, fst(target), c, ls)
       };
     /* Add child to parent */
     let target = Node(targetU, p, c, insert(source, ls));
@@ -70,27 +78,39 @@ let attachLocal = (source, target) =>
     (source, target);
   };
 
-let removeLocal = (source, target) =>
+let removeLocal = (source: (node, 'a), target: (node, 'b)): (node, node) =>
   switch (fst(target)) {
   | Empty => (Empty, Empty)
   | Node(u, p, c, ls) =>
-    let ls = removeBy(byUuid(getUuid(source)), ls);
+    let ls = removeBy(byUuid(getUuid(fst(source))), ls);
     (Empty, Node(u, p, c, ls));
   };
 
-let updateLocal = (source, target) => attachLocal(source, removeLocal(source, target));
+let updateLocal = (source: (node, 'a), target: (node, 'b)): (node, node) => {
+  let (_, lt) = target;
+  attachLocal(source, (snd(removeLocal(source, target)), lt));
+};
 
-let attach = (source, target) => {
+let attach = (source: (node, 'a), target: (node, 'b)): (node, 'b) => {
   let (_, lt) = target;
   let (s, t) = attachLocal(source, target);
 
-  (snd(attachLocal(source, target)), LT.empty);
+  (t, lt);
 };
 
-let remove = (source, target) => (removeLocal(fst(source), fst(target)), LT.empty);
+let remove = (source: (node, 'a), target: (node, 'b)): (node, 'b) => {
+  let (_, lt) = target;
+  let (s, t) = removeLocal(source, target);
+
+  (t, lt);
+};
 
 /* Probably to update content */
-let update = (source, target) => updateLocal(source, target);
+let update = (source: (node, 'a), target: (node, 'b)): (node, 'b) => {
+  let (_, lt) = target;
+  let (s, t) = updateLocal(source, target);
+  (t, lt);
+};
 
 /*
  Attach, remove, update requires changes to propagate up to root,
@@ -134,7 +154,13 @@ let printFn = (level, u, p, ls) => {
     | 0 => "_"
     | _ => "[" ++ string_of_children(ls) ++ "]"
     };
-  Js.log(fmtLevel(level, d, "(" ++ u ++ "," ++ getUuid(p) ++ "," ++ rootsString ++ ")"));
+  Js.log(
+    fmtLevel(
+      level,
+      d,
+      "(" ++ u ++ "," ++ getUuid(p) ++ "," ++ rootsString ++ ")",
+    ),
+  );
 };
 
 let printTree = tree => printTreeRec(printFn, 0, fst(tree));
